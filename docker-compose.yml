@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  dev:
+    # Will build ./docker/dev/Dockerfile
+    # This Dockerfile is for development
+    build:
+      context: .
+      dockerfile: ./docker/dev/Dockerfile
+    volumes:
+      - ./:/deep-co-training
