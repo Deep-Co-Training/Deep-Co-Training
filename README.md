@@ -124,9 +124,31 @@ This is an example of how to list things you need to use the software and how to
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+### Development
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+To develop/maintain code use the following steps to setup your environment.
+
+1. To build the docker dev image run the following command
+
+```
+docker-compose up
+```
+
+This command builds the docker image which can then be used to start up the container.
+
+2. Next use the following command to start up the dev docker container.
+
+```
+docker run --gpus all -it --rm -p 8888:8888 -v $PWD:/deep-co-training deep-co-training_dev
+```
+
+#### Jupyter Notebook
+
+Once the container is up and running use the following code to launch jupyter notebooks.
+
+```
+jupyter notebook --ip 0.0.0.0 --no-browser --allow-root
+```
 
 
 
