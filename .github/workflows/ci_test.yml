@@ -15,5 +15,6 @@ jobs:
       with:
         python-root: '.'
         flake8-flags: '--count --show-source --statistics'
-        mypy-flags: '--ignore-missing-imports'
         fail-on-isort: true
+    - name: black
+      uses: psf/black@stable
