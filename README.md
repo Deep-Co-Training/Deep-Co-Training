@@ -37,14 +37,12 @@
   <p align="center">
     project_description
     <br />
-    <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/Deep-Co-Training/Deep-Co-Training"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/github_username/repo_name">View Demo</a>
+    <a href="https://github.com/Deep-Co-Training/Deep-Co-Training/issues">Report Bug</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/github_username/repo_name/issues">Request Feature</a>
+    <a href="https://github.com/Deep-Co-Training/Deep-Co-Training/issues">Request Feature</a>
   </p>
 </p>
 
@@ -62,7 +60,6 @@
   <li>
     <a href="#getting-started">Getting Started</a>
     <ul>
-      <li><a href="#prerequisites">Prerequisites</a></li>
       <li><a href="#installation">Installation</a></li>
     </ul>
   </li>
@@ -98,14 +95,11 @@ Here's a blank template to get started:
 <!-- GETTING STARTED -->
 ## Getting Started
 
-To get a local copy up and running follow these simple steps.
-
 ### Installation
-
-1. Clone the repo
-   ```sh
-   git clone https://github.com/Deep-Co-Training/Deep-Co-Training.git
-   ```
+To get a local copy up and running clone the repo.
+```sh
+git clone https://github.com/Deep-Co-Training/Deep-Co-Training.git
+```
 
 
 
@@ -115,6 +109,9 @@ To get a local copy up and running follow these simple steps.
 ### Development
 
 To develop/maintain code use the following steps to setup your environment.
+
+
+#### Docker Container
 
 1. To build the docker dev image run the following command
 
@@ -143,7 +140,7 @@ jupyter notebook --ip 0.0.0.0 --no-browser --allow-root
 <!-- ROADMAP -->
 ## Roadmap
 
-See the [open issues](https://github.com/github_username/repo_name/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/Deep-Co-Training/Deep-Co-Training/issues) for a list of proposed features (and known issues).
 
 
 
@@ -191,14 +188,13 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email
 
-Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
+Project Link: [Deep-Co-Training](https://github.com/Deep-Co-Training/Deep-Co-Training)
 
 
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
 
-* []()
 * [README-Template](Best-README-Template)
 * [Img Shields](https://shields.io)
 
