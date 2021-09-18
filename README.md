@@ -161,7 +161,7 @@ Contributions are what make the open source community such an amazing place to b
 7. Open a Pull Request (PR). Go to the original project repo on GitHub. There will be a message about your recently pushed branch, asking if you would like to open a pull request. Follow the prompts, compare across repositories, and submit the PR. This will send an email to the committers. You may want to consider sending an email to the mailing list for more visibility.
 8. Maintainers and other contributors will review your PR. Please participate in the conversation, and try to make any requested changes. Once the PR is approved, the code will be merged.
 
-###Style Guide
+### Style Guide
 This repository uses [flake8](https://flake8.pycqa.org/en/latest/) to check pep8 compliance and code analysis.
 
 We utilize [Black](https://black.readthedocs.io/en/stable/) to format our code. The continuous integration will fail if you do not use it.
