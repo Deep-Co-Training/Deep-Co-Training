@@ -1,0 +1,7 @@
+jupyter
+numpy
+pandas
+black
+flake8
+nltk
+scikit-learn
