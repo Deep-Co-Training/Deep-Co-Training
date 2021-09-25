@@ -1,2 +1,5 @@
 ## Ignore the dataset folder
 /Deep-Co-Training/datasets
+
+## Jupyter Notebook checkpoints
+.ipynb_checkpoints/
