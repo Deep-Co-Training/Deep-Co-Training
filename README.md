@@ -106,7 +106,7 @@ Currently the dataset which is being used for the training process is the [Yelp 
 
 To get a local copy of the dataset run the following commands
 
-1. Download the dataset from the [Yelp website](https://www.yelp.com/dataset).
+1. Download the dataset from [kaggle](https://www.kaggle.com/yelp-dataset/yelp-dataset/version/6?select=yelp_review.csv).
 
 2. At the root project directory run the following commands to create a folder to export the dataset
 ```
