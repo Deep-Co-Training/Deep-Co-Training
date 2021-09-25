@@ -101,7 +101,23 @@ To get a local copy up and running clone the repo.
 git clone https://github.com/Deep-Co-Training/Deep-Co-Training.git
 ```
 
+### Datasets
+Currently the dataset which is being used for the training process is the [Yelp Dataset](https://www.yelp.com/dataset).
 
+To get a local copy of the dataset run the following commands
+
+1. Download the dataset from the [Yelp website](https://www.yelp.com/dataset).
+
+2. At the root project directory run the following commands to create a folder to export the dataset
+```
+$ cd Deep-Co-Training
+$ mkdir datasets
+$ cd datasets
+$ mkdir yelp
+$ cd yelp 
+```
+
+3. Once you are in the `Deep-Co-Training/Deep-Co-Training/datasets/Yelp` directory, go ahead and extract the dataset downloaded from the website.
 
 <!-- USAGE EXAMPLES -->
 ## Usage
