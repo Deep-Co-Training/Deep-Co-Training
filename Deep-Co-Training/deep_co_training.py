@@ -11,15 +11,14 @@ import numpy as np
 
 TESTMODEL1 = 'models.testing'
 EPOCHS=4
-train_acc_metric = keras.metrics.SparseCategoricalAccuracy()
-val_acc_metric = keras.metrics.SparseCategoricalAccuracy()
+train_acc_metric = keras.metrics.RootMeanSquaredError()
 
 # Instantiate an optimizer to train the model.
 optimizer = keras.optimizers.SGD(learning_rate=1e-3)
 # Instantiate a loss function.
 loss_fn = keras.losses.MeanSquaredError()
 
-batch_size=4
+batch_size=2
 
 def import_model(subname):
 	mymodule=None
