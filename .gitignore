@@ -3,3 +3,5 @@
 
 ## Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+/Deep-Co-Training/models/__pycache__/
