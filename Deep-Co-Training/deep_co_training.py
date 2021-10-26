@@ -100,12 +100,12 @@ def deep_co_training():
 
 	## If not:
 	# Data Ingestion
-	inputs = np.array([[0,0],[0,1],[1,0],[1,1]])
-	print('size', inputs.shape)
-	expected_output = np.array([[0],[1],[1],[0]])
+	inputs = ["Epstein did not kill himself!"]
+	# print('size', inputs.shape)
+	expected_output = np.array([0])
 
 	train_dataset = tf.data.Dataset.from_tensor_slices((inputs,expected_output))
-	train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
+	train_dataset = train_dataset.shuffle(buffer_size=128).batch(batch_size)
 	print('train:',train_dataset)
 	# Data Preprocessing
 
