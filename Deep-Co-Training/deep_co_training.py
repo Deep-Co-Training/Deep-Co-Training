@@ -10,6 +10,7 @@ import numpy as np
 
 
 TESTMODEL1 = 'models.testing'
+BERT = 'models.bert'
 EPOCHS=4
 train_acc_metric = keras.metrics.RootMeanSquaredError()
 
@@ -22,12 +23,13 @@ batch_size=2
 
 def import_model(subname):
 	mymodule=None
+	print(subname)
 	try:
 		mymodule = importlib.import_module(subname)
 	except Exception as e:
-		print(e)
+		print('Error',e)
 		print('FAILED')
-	model = mymodule.CustomModelTesting.get_model()
+	model = mymodule.Bert.get_model()
 	print(model.summary())
 	return model
 
@@ -112,7 +114,7 @@ def deep_co_training():
 	# Load constants
 
 	# Load C1
-	c1 = import_model(TESTMODEL1)
+	c1 = import_model(BERT)
 
 	# Load C2
 

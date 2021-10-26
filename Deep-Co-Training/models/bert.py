@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_hub as hub
 
-# import tensorflow_text as text
+import tensorflow_text as text
 # from official.nlp import optimization  # to create AdamW optimizer
 
 map_name_to_handle = {
@@ -29,19 +29,25 @@ text_preprocessed = bert_preprocess_model(text_test)
 print(f"Keys       : {list(text_preprocessed.keys())}")
 print(f'Shape      : {text_preprocessed["input_word_ids"].shape}')
 
+class Bert:
 
-def build_classifier_model():
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name="text")
-    preprocessing_layer = hub.KerasLayer(tfhub_handle_preprocess, name="preprocessing")
-    encoder_inputs = preprocessing_layer(text_input)
-    encoder = hub.KerasLayer(tfhub_handle_encoder, trainable=True, name="BERT_encoder")
-    outputs = encoder(encoder_inputs)
-    net = outputs["pooled_output"]
-    # The dense layer goes here
-    net = tf.keras.layers.Dropout(0.1)(net)
-    net = tf.keras.layers.Dense(1, activation=None, name="classifier")(net)
-    return tf.keras.Model(text_input, net)
+    def __init__(self):
+        pass
+
+    def get_model():
+        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name="text")
+        preprocessing_layer = hub.KerasLayer(tfhub_handle_preprocess, name="preprocessing")
+        encoder_inputs = preprocessing_layer(text_input)
+        encoder = hub.KerasLayer(tfhub_handle_encoder, trainable=True, name="BERT_encoder")
+        outputs = encoder(encoder_inputs)
+        net = outputs["pooled_output"]
+        # The dense layer goes here
+        net = tf.keras.layers.Dropout(0.1)(net)
+        net = tf.keras.layers.Dense(1, activation=None, name="classifier")(net)
+        
+        model = tf.keras.Model(text_input, net)
+        return model
 
 
 if __name__ == "__main__":
-    build_classifier_model()
+    get_model()
