@@ -24,21 +24,29 @@ batch_size=2
 
 #Create stateful metrics that can be used to accumulate values during training and logged at any point
 train_loss_clf1 = tf.keras.losses.BinaryCrossentropy('train_loss', from_logits=True)
-train_accuracy_clf1 = keras.metrics.RootMeanSquaredError('train_accuracy')
+train_accuracy_clf1 = keras.metrics.BinaryAccuracy('train_accuracy')
 test_loss_clf1 = tf.keras.losses.BinaryCrossentropy('test_loss', from_logits=True)
-test_accuracy_clf1 = keras.metrics.RootMeanSquaredError('test_accuracy')
+test_accuracy_clf1 = keras.metrics.BinaryAccuracy('test_accuracy')
+
+train_loss_clf2 = tf.keras.losses.BinaryCrossentropy('train_loss', from_logits=True)
+train_accuracy_clf2 = keras.metrics.BinaryAccuracy('train_accuracy')
+test_loss_clf2 = tf.keras.losses.BinaryCrossentropy('test_loss', from_logits=True)
+test_accuracy_clf2 = keras.metrics.BinaryAccuracy('test_accuracy')
+
 
 #Set up summary writers to write the summaries to disk in a different logs directory
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
-test_log_dir = 'logs/gradient_tape/' + current_time + '/test'
-train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+train_log_dir_clf1 = 'logs/logs_clf1/gradient_tape/' + current_time + '/train'
+test_log_dir_clf1 = 'logs/logs_clf1/gradient_tape/' + current_time + '/test'
+train_summary_writer_clf1 = tf.summary.create_file_writer(train_log_dir_clf1)
+test_summary_writer_clf1 = tf.summary.create_file_writer(test_log_dir_clf1)
 
-train_loss_clf2 = None
-train_accuracy_clf2 = None
-test_loss_clf2 = None
-test_accuracy_clf2 = None
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+train_log_dir_clf2 = 'logs/logs_clf2/gradient_tape/' + current_time + '/train'
+test_log_dir_clf2 = 'logs/logs_clf2/gradient_tape/' + current_time + '/test'
+train_summary_writer_clf2 = tf.summary.create_file_writer(train_log_dir_clf2)
+test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
+
 
 def import_model(subname):
 	mymodule=None
@@ -82,11 +90,11 @@ def custom_train(EPOCHS,c1,train_dataset):
 			loss_value = train_step(x_batch_train, y_batch_train, c1)
 
 			# Use tf.summary.scalar() to log metrics with the scope of the summary writers 
-			with train_summary_writer.as_default():
+			with train_summary_writer_clf1.as_default():
 				tf.summary.scalar('loss', train_loss_clf1.result(), step=epoch)
 				tf.summary.scalar('accuracy', train_accuracy_clf1.result(), step=epoch)
 
-			with train_summary_writer.as_default():
+			with train_summary_writer_clf2.as_default():
 				tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
 				tf.summary.scalar('accuracy', train_accuracy_clf2.result(), step=epoch)
 
@@ -108,11 +116,11 @@ def custom_train(EPOCHS,c1,train_dataset):
 		# for x_batch_val, y_batch_val in val_dataset:
 		# 	test_step(x_batch_val, y_batch_val, c1)
 
-		# with test_summary_writer.as_default():
+		# with test_summary_writer_clf1.as_default():
 		# 	tf.summary.scalar('loss', test_loss_clf1.result(), step=epoch)
 		# 	tf.summary.scalar('accuracy', test_accuracy_clf1.result(), step=epoch)
 
-		# with test_summary_writer.as_default():
+		# with test_summary_writer_clf2.as_default():
 		# 	tf.summary.scalar('loss', test_loss_clf2.result(), step=epoch)
 		# 	tf.summary.scalar('accuracy', test_accuracy_clf2.result(), step=epoch)
 
