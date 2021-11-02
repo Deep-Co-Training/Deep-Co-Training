@@ -10,27 +10,27 @@ from tensorflow.keras import layers
 from official.nlp import optimization
 import numpy as np
 
-TESTMODEL1 = 'models.testing'
-BERT = 'models.bert'
+from models.bert import Bert
+
+
 EPOCHS=4
-train_acc_metric = keras.metrics.RootMeanSquaredError()
+batch_size = 32
 
 # Instantiate an optimizer to train the model.
 optimizer = keras.optimizers.SGD(learning_rate=1e-3)
 # Instantiate a loss function.
-loss_fn = keras.losses.MeanSquaredError()
+loss_fn = keras.losses.BinaryCrossentropy()
 
-batch_size=2
 
 #Create stateful metrics that can be used to accumulate values during training and logged at any point
-train_loss_clf1 = tf.keras.losses.BinaryCrossentropy(name='train_loss', from_logits=True)
+train_loss_clf1 = tf.keras.metrics.Mean(name='train_loss', dtype=tf.float32)
 train_accuracy_clf1 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf1 = tf.keras.losses.BinaryCrossentropy(name='test_loss', from_logits=True)
+test_loss_clf1 = tf.keras.metrics.Mean(name='test_loss', dtype=tf.float32)
 test_accuracy_clf1 = keras.metrics.BinaryAccuracy('test_accuracy')
 
-train_loss_clf2 = tf.keras.losses.BinaryCrossentropy(name='train_loss', from_logits=True)
+train_loss_clf2 = tf.keras.metrics.Mean(name='train_loss', dtype=tf.float32)
 train_accuracy_clf2 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf2 = tf.keras.losses.BinaryCrossentropy(name='test_loss', from_logits=True)
+test_loss_clf2 = tf.keras.metrics.Mean(name='test_loss', dtype=tf.float32)
 test_accuracy_clf2 = keras.metrics.BinaryAccuracy('test_accuracy')
 
 
@@ -48,13 +48,8 @@ train_summary_writer_clf2 = tf.summary.create_file_writer(train_log_dir_clf2)
 test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
 
 #Optimizer
-num_train_steps =  steps_per_epoch * EPOCHS
-num_warmup_steps = int(0.1*num_train_steps)
-init_lr = 3e-5
-optimizer_clf1 = optimization.create_optimizer(init_lr=init_lr,
-										  num_train_step=EPOCHS,
-										  num_warmup_steps,
-										  optimizer_type='adamw')
+optimizer_clf1 = keras.optimizers.Adam()
+
 
 def import_model(subname):
 	mymodule=None
@@ -69,7 +64,7 @@ def import_model(subname):
 	return model
 
 @tf.function
-def train_step(x, y, model):
+def train_step(x, y, model, train_acc_metric):
 	with tf.GradientTape() as tape:
 		print('x',x)
 		logits = model(x, training=True)
@@ -79,6 +74,7 @@ def train_step(x, y, model):
 	grads = tape.gradient(loss_value, model.trainable_weights)
 	optimizer.apply_gradients(zip(grads, model.trainable_weights))
 	train_acc_metric.update_state(y, logits)
+	
 	return loss_value
 
 @tf.function
@@ -86,39 +82,44 @@ def test_step(x, y, model):
 	val_logits = model(x, training=False)
 	val_acc_metric.update_state(y, val_logits)
 
-def custom_train(EPOCHS,c1,train_dataset):
+def custom_train(EPOCHS,c1,c2,train_dataset):
 	for epoch in range(EPOCHS):
 		print("\nStart of epoch %d" % (epoch,))
 		start_time = time.time()
-		print(train_dataset)
+		# print(train_dataset)
 		# Iterate over the batches of the dataset.
 		for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
 
 			print(step, x_batch_train, y_batch_train)
-			loss_value = train_step(x_batch_train, y_batch_train, c1)
+			loss_value_c1 = train_step(x_batch_train, y_batch_train, c1, train_accuracy_clf1)
+			loss_value_c2 = train_step(x_batch_train, y_batch_train, c2, train_accuracy_clf2)			
+
+			train_acc_c1 = train_accuracy_clf1.result()
+			train_acc_c2 = train_accuracy_clf2.result()
 
 			# Use tf.summary.scalar() to log metrics with the scope of the summary writers 
 			with train_summary_writer_clf1.as_default():
-				tf.summary.scalar('loss', train_loss_clf1.result(), step=epoch)
-				tf.summary.scalar('accuracy', train_accuracy_clf1.result(), step=epoch)
+				tf.summary.scalar('loss', loss_value_c1, step=epoch)
+				tf.summary.scalar('accuracy', train_acc_c1, step=epoch)
 
 			with train_summary_writer_clf2.as_default():
-				tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
-				tf.summary.scalar('accuracy', train_accuracy_clf2.result(), step=epoch)
+				tf.summary.scalar('loss', loss_value_c2, step=epoch)
+				tf.summary.scalar('accuracy', train_acc_c2, step=epoch)
 
 			# Log every batch.
 			print(
-				"Training loss (for one batch) at step %d: %.4f"
-				% (step, float(loss_value))
+				"Training loss_c1 (for one batch) at step %d: %.4f"
+				% (step, float(loss_value_c1))
+			)
+			print(
+				"Training loss_c2 (for one batch) at step %d: %.4f"
+				% (step, float(loss_value_c2))
 			)
 			print("Seen so far: %d samples" % ((step + 1) * 4))
 
 		# Display metrics at the end of each epoch.
-		train_acc = train_acc_metric.result()
-		print("Training acc over epoch: %.4f" % (float(train_acc),))
-
-		# Reset training metrics at the end of each epoch
-		# train_acc_metric.reset_states()
+		print("Training acc over epoch: %.4f" % (float(train_acc_c1),))
+		print("Training acc over epoch: %.4f" % (float(train_acc_c2),))
 
 		# Run a validation loop at the end of each epoch.
 		# for x_batch_val, y_batch_val in val_dataset:
@@ -136,6 +137,8 @@ def custom_train(EPOCHS,c1,train_dataset):
 		# val_acc_metric.reset_states()
 		# print("Validation acc: %.4f" % (float(val_acc),))
 		# print("Time taken: %.2fs" % (time.time() - start_time))
+
+		# Reset training metrics at the end of each epoch
 
 		train_loss_clf1.reset_states()
 		test_loss_clf1.reset_states()
@@ -178,14 +181,17 @@ def deep_co_training():
 	# Load constants
 
 	# Load C1
-	c1 = import_model(BERT)
+	c1 = Bert.get_model()
+	c1.summary()
 
 	# Load C2
+	c2 = Bert.get_model()
+	c2.summary()
 
 	# Initialize optimizer and loss function
 
 	## Training
-	custom_train(EPOCHS,c1,train_dataset)
+	custom_train(EPOCHS,c1,c2,train_dataset)
 
 
 	pass
