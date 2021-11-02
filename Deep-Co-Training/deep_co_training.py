@@ -10,8 +10,9 @@ from tensorflow.keras import layers
 from official.nlp import optimization
 import numpy as np
 
-from models.bert import Bert
 
+from data.data_ingestion import DataIngestion
+from models.bert import Bert
 
 EPOCHS=4
 batch_size = 32
@@ -118,6 +119,7 @@ def custom_train(EPOCHS,c1,c2,train_dataset):
 			print("Seen so far: %d samples" % ((step + 1) * 4))
 
 		# Display metrics at the end of each epoch.
+    
 		print("Training acc over epoch: %.4f" % (float(train_acc_c1),))
 		print("Training acc over epoch: %.4f" % (float(train_acc_c2),))
 
@@ -163,21 +165,12 @@ def deep_co_training():
 		N/A
 	'''
 
-	## Check if preprocessed dataset exists
+	# DATA INGESTION
 
-	## If not:
-	# Data Ingestion
-	inputs = ["Epstein did not kill himself!"]
-	# print('size', inputs.shape)
-	expected_output = np.array([0])
-
-	train_dataset = tf.data.Dataset.from_tensor_slices((inputs,expected_output))
-	train_dataset = train_dataset.shuffle(buffer_size=128).batch(batch_size)
-	print('train:',train_dataset)
-	# Data Preprocessing
-
-	## If it does -- continue to training
-
+	dataset_obj = DataIngestion(dataset_path="datasets/yelp_polarity_reviews",
+		batch_size = 32,
+		buffer_size = 128)
+	(train_dataset, test_dataset) = DataIngestion.load_dataset(dataset_obj)
 	# Load constants
 
 	# Load C1
@@ -192,7 +185,6 @@ def deep_co_training():
 
 	## Training
 	custom_train(EPOCHS,c1,c2,train_dataset)
-
 
 	pass
 	
