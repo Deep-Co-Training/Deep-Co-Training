@@ -77,7 +77,11 @@ def train_step(x, y, model):
 		print('LOSS VAL',loss_value)
 	grads = tape.gradient(loss_value, model.trainable_weights)
 	optimizer.apply_gradients(zip(grads, model.trainable_weights))
-	train_acc_metric.update_state(y, logits)
+
+# This is for classifier 1, similar must be done for clf2
+	train_loss_clf1(loss_value)
+	train_accuracy_clf1(y, logits)
+
 	return loss_value
 
 @tf.function
