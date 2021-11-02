@@ -7,8 +7,8 @@ import datetime
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from official.nlp import optimization
 import numpy as np
-
 
 TESTMODEL1 = 'models.testing'
 BERT = 'models.bert'
@@ -23,14 +23,14 @@ loss_fn = keras.losses.MeanSquaredError()
 batch_size=2
 
 #Create stateful metrics that can be used to accumulate values during training and logged at any point
-train_loss_clf1 = tf.keras.losses.BinaryCrossentropy('train_loss', from_logits=True)
+train_loss_clf1 = tf.keras.losses.BinaryCrossentropy(name='train_loss', from_logits=True)
 train_accuracy_clf1 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf1 = tf.keras.losses.BinaryCrossentropy('test_loss', from_logits=True)
+test_loss_clf1 = tf.keras.losses.BinaryCrossentropy(name='test_loss', from_logits=True)
 test_accuracy_clf1 = keras.metrics.BinaryAccuracy('test_accuracy')
 
-train_loss_clf2 = tf.keras.losses.BinaryCrossentropy('train_loss', from_logits=True)
+train_loss_clf2 = tf.keras.losses.BinaryCrossentropy(name='train_loss', from_logits=True)
 train_accuracy_clf2 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf2 = tf.keras.losses.BinaryCrossentropy('test_loss', from_logits=True)
+test_loss_clf2 = tf.keras.losses.BinaryCrossentropy(name='test_loss', from_logits=True)
 test_accuracy_clf2 = keras.metrics.BinaryAccuracy('test_accuracy')
 
 
@@ -47,6 +47,14 @@ test_log_dir_clf2 = 'logs/logs_clf2/gradient_tape/' + current_time + '/test'
 train_summary_writer_clf2 = tf.summary.create_file_writer(train_log_dir_clf2)
 test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
 
+#Optimizer
+num_train_steps =  steps_per_epoch * EPOCHS
+num_warmup_steps = int(0.1*num_train_steps)
+init_lr = 3e-5
+optimizer_clf1 = optimization.create_optimizer(init_lr=init_lr,
+										  num_train_step=EPOCHS,
+										  num_warmup_steps,
+										  optimizer_type='adamw')
 
 def import_model(subname):
 	mymodule=None
