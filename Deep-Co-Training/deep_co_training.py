@@ -13,24 +13,23 @@ import numpy as np
 TESTMODEL1 = 'models.testing'
 BERT = 'models.bert'
 EPOCHS=4
-train_acc_metric = keras.metrics.RootMeanSquaredError()
 
 # Instantiate an optimizer to train the model.
 optimizer = keras.optimizers.SGD(learning_rate=1e-3)
 # Instantiate a loss function.
-loss_fn = keras.losses.MeanSquaredError()
+loss_fn = tf.keras.losses.binary_crossentropy()
 
 batch_size=2
 
 #Create stateful metrics that can be used to accumulate values during training and logged at any point
-train_loss_clf1 = tf.keras.losses.BinaryCrossentropy(name='train_loss', from_logits=True)
+train_loss_clf1 = tf.keras.metrics.Mean(name='train_loss', dtype=tf.float32)
 train_accuracy_clf1 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf1 = tf.keras.losses.BinaryCrossentropy(name='test_loss', from_logits=True)
+test_loss_clf1 = tf.keras.metrics.Mean(name='test_loss', dtype=tf.float32)
 test_accuracy_clf1 = keras.metrics.BinaryAccuracy('test_accuracy')
 
-train_loss_clf2 = tf.keras.losses.BinaryCrossentropy(name='train_loss', from_logits=True)
+train_loss_clf2 = tf.keras.metrics.Mean(name='train_loss', dtype=tf.float32)
 train_accuracy_clf2 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf2 = tf.keras.losses.BinaryCrossentropy(name='test_loss', from_logits=True)
+test_loss_clf2 = tf.keras.metrics.Mean(name='test_loss', dtype=tf.float32)
 test_accuracy_clf2 = keras.metrics.BinaryAccuracy('test_accuracy')
 
 
