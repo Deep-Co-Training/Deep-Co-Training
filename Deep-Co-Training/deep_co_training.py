@@ -8,6 +8,8 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 
+from data.data_ingestion import DataIngestion
+from models.bert import Bert
 
 TESTMODEL1 = 'models.testing'
 BERT = 'models.bert'
@@ -73,7 +75,7 @@ def custom_train(EPOCHS,c1,train_dataset):
 		print("Training acc over epoch: %.4f" % (float(train_acc),))
 
 		# Reset training metrics at the end of each epoch
-		# train_acc_metric.reset_states()
+		train_acc_metric.reset_states()
 
 		# Run a validation loop at the end of each epoch.
 		# for x_batch_val, y_batch_val in val_dataset:
@@ -96,25 +98,17 @@ def deep_co_training():
 		N/A
 	'''
 
-	## Check if preprocessed dataset exists
+	# DATA INGESTION
 
-	## If not:
-	# Data Ingestion
-	inputs = ["Epstein did not kill himself!"]
-	# print('size', inputs.shape)
-	expected_output = np.array([0])
-
-	train_dataset = tf.data.Dataset.from_tensor_slices((inputs,expected_output))
-	train_dataset = train_dataset.shuffle(buffer_size=128).batch(batch_size)
-	print('train:',train_dataset)
-	# Data Preprocessing
-
-	## If it does -- continue to training
-
+	dataset_obj = DataIngestion(dataset_path="datasets/yelp_polarity_reviews",
+		batch_size = 32,
+		buffer_size = 128)
+	(train_dataset, test_dataset) = DataIngestion.load_dataset(dataset_obj)
 	# Load constants
 
 	# Load C1
-	c1 = import_model(BERT)
+	c1 = Bert.get_model()
+	c1.summary()
 
 	# Load C2
 
@@ -122,7 +116,6 @@ def deep_co_training():
 
 	## Training
 	custom_train(EPOCHS,c1,train_dataset)
-
 
 	pass
 	
