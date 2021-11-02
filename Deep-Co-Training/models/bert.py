@@ -50,4 +50,5 @@ class Bert:
 
 
 if __name__ == "__main__":
-    get_model()
+    bert = Bert()
+    bert.get_model()
