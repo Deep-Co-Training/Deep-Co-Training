@@ -15,10 +15,10 @@ from data.data_ingestion import DataIngestion
 from models.bert import Bert
 
 EPOCHS=4
-batch_size = 32
+batch_size = 12
 
 # Instantiate an optimizer to train the model.
-optimizer = keras.optimizers.SGD(learning_rate=1e-3)
+optimizer = keras.optimizers.Adam()
 # Instantiate a loss function.
 loss_fn = keras.losses.BinaryCrossentropy()
 
@@ -48,26 +48,11 @@ test_log_dir_clf2 = 'logs/logs_clf2/gradient_tape/' + current_time + '/test'
 train_summary_writer_clf2 = tf.summary.create_file_writer(train_log_dir_clf2)
 test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
 
-#Optimizer
-optimizer_clf1 = keras.optimizers.Adam()
-
-
-def import_model(subname):
-	mymodule=None
-	print(subname)
-	try:
-		mymodule = importlib.import_module(subname)
-	except Exception as e:
-		print('Error',e)
-		print('FAILED')
-	model = mymodule.Bert.get_model()
-	print(model.summary())
-	return model
 
 @tf.function
 def train_step(x, y, model, train_acc_metric):
 	with tf.GradientTape() as tape:
-		print('x',x)
+		# print('x',x)
 		logits = model(x, training=True)
 		print('LOGITS',logits)
 		loss_value = loss_fn(y, logits)
@@ -79,19 +64,19 @@ def train_step(x, y, model, train_acc_metric):
 	return loss_value
 
 @tf.function
-def test_step(x, y, model):
+def test_step(x, y, model, val_acc_metric):
 	val_logits = model(x, training=False)
 	val_acc_metric.update_state(y, val_logits)
 
-def custom_train(EPOCHS,c1,c2,train_dataset):
+def custom_train(EPOCHS,c1,c2,train_dataset,val_dataset):
 	for epoch in range(EPOCHS):
 		print("\nStart of epoch %d" % (epoch,))
 		start_time = time.time()
-		# print(train_dataset)
+
 		# Iterate over the batches of the dataset.
 		for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
 
-			print(step, x_batch_train, y_batch_train)
+			print(step)
 			loss_value_c1 = train_step(x_batch_train, y_batch_train, c1, train_accuracy_clf1)
 			loss_value_c2 = train_step(x_batch_train, y_batch_train, c2, train_accuracy_clf2)			
 
@@ -124,21 +109,23 @@ def custom_train(EPOCHS,c1,c2,train_dataset):
 		print("Training acc over epoch: %.4f" % (float(train_acc_c2),))
 
 		# Run a validation loop at the end of each epoch.
-		# for x_batch_val, y_batch_val in val_dataset:
-		# 	test_step(x_batch_val, y_batch_val, c1)
+		for x_batch_val, y_batch_val in val_dataset:
+			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf1)
+			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf2)
 
-		# with test_summary_writer_clf1.as_default():
-		# 	tf.summary.scalar('loss', test_loss_clf1.result(), step=epoch)
-		# 	tf.summary.scalar('accuracy', test_accuracy_clf1.result(), step=epoch)
 
-		# with test_summary_writer_clf2.as_default():
-		# 	tf.summary.scalar('loss', test_loss_clf2.result(), step=epoch)
-		# 	tf.summary.scalar('accuracy', test_accuracy_clf2.result(), step=epoch)
+		with test_summary_writer_clf1.as_default():
+			tf.summary.scalar('loss', test_loss_clf1.result(), step=epoch)
+			tf.summary.scalar('accuracy', test_accuracy_clf1.result(), step=epoch)
 
-		# val_acc = val_acc_metric.result()
-		# val_acc_metric.reset_states()
-		# print("Validation acc: %.4f" % (float(val_acc),))
-		# print("Time taken: %.2fs" % (time.time() - start_time))
+		with test_summary_writer_clf2.as_default():
+			tf.summary.scalar('loss', test_loss_clf2.result(), step=epoch)
+			tf.summary.scalar('accuracy', test_accuracy_clf2.result(), step=epoch)
+
+		val_acc = val_acc_metric.result()
+		val_acc_metric.reset_states()
+		print("Validation acc: %.4f" % (float(val_acc),))
+		print("Time taken: %.2fs" % (time.time() - start_time))
 
 		# Reset training metrics at the end of each epoch
 
@@ -168,23 +155,24 @@ def deep_co_training():
 	# DATA INGESTION
 
 	dataset_obj = DataIngestion(dataset_path="datasets/yelp_polarity_reviews",
-		batch_size = 32,
-		buffer_size = 128)
+		batch_size = 12,
+		buffer_size = 32)
 	(train_dataset, test_dataset) = DataIngestion.load_dataset(dataset_obj)
+	
 	# Load constants
 
-	# Load C1
+	# LOAD CLASSIFIER 1
 	c1 = Bert.get_model()
 	c1.summary()
 
-	# Load C2
+	# LOAD CLASSIFIER 2
 	c2 = Bert.get_model()
 	c2.summary()
 
 	# Initialize optimizer and loss function
 
 	## Training
-	custom_train(EPOCHS,c1,c2,train_dataset)
+	custom_train(EPOCHS,c1,c2,train_dataset,test_dataset)
 
 	pass
 	
