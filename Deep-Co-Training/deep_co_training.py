@@ -150,9 +150,10 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 			tf.summary.scalar('loss', test_loss_clf2.result(), step=epoch)
 			tf.summary.scalar('accuracy', test_accuracy_clf2.result(), step=epoch)
 
-		val_acc = val_acc_metric.result()
-		val_acc_metric.reset_states()
-		print("Validation acc: %.4f" % (float(val_acc),))
+		val_acc1 = test_accuracy_clf1.result()
+		val_acc2 = test_accuracy_clf2.result()
+		print("Validation c1 acc: %.4f" % (float(val_acc1),))
+		print("Validation c2 acc: %.4f" % (float(val_acc2),))		
 		print("Time taken: %.2fs" % (time.time() - start_time))
 
 		# Reset training metrics at the end of each epoch
