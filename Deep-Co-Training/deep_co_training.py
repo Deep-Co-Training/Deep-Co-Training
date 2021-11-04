@@ -137,7 +137,7 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		print("Training acc over epoch: %.4f" % (float(train_acc_c2),))
 
 		# Run a validation loop at the end of each epoch.
-		for x_batch_val, y_batch_val in val_dataset:
+		for x_batch_val, y_batch_val in test_dataset:
 			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf1)
 			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf2)
 
@@ -166,8 +166,11 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		predictions_c1 = c1.predict(unsupervised_dataset)
 		predictions_c2 = c2.predict(unsupervised_dataset)
 
-		print("predictions c1 shape:", predictions_c1)
-		print("predictions c2 shape:", predictions_c2)
+		print("predictions c1 shape:", predictions_c1.shape)
+		print("predictions c1:", predictions_c1)
+
+		print("predictions c2 shape:", predictions_c2.shape)
+		print("predictions c2:", predictions_c2)
 		
 		(topk_c1_positive, topk_c1_negative) = top_k(predictions_c1,10)
 		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,10)		
