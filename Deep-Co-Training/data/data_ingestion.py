@@ -23,14 +23,18 @@ class DataIngestion:
 
 	def create_tensors(self,df):
 		text_np_array = df['text'].to_numpy()
-		review_np_array = df['review'].to_numpy()
-		dataset = tf.data.Dataset.from_tensor_slices((text_np_array, review_np_array))
+		if 'review' in df.columns:
+			review_np_array = df['review'].to_numpy()
+			dataset = tf.data.Dataset.from_tensor_slices((text_np_array, review_np_array))
+		else:
+			dataset = tf.data.Dataset.from_tensor_slices((text_np_array))
 		dataset = dataset.shuffle(buffer_size=self.buffer_size).batch(self.batch_size)
 		return dataset
 	
 	def create_unsupervised_split(self, df):
 		unsupervised_df = df.sample(frac=0.6, random_state=200)
 		train_df = df.drop(unsupervised_df.index)
+		unsupervised_df = df.drop(columns=['review'])
 		return (train_df, unsupervised_df)
 
 	def load_dataset(self):
@@ -55,9 +59,9 @@ class DataIngestion:
 
 		(df_train, df_unsupervised) = self.create_unsupervised_split(df_train)
 
-		train_dataset = self.create_tensors(df_train)
-		test_dataset = self.create_tensors(df_test)
-		unsupervised_dataset = self.create_tensors(df_unsupervised)
+		train_dataset = self.create_tensors(df_train.sample(frac=0.05,random_state=200))
+		test_dataset = self.create_tensors(df_test.sample(frac=0.05,random_state=200))
+		unsupervised_dataset = self.create_tensors(df_unsupervised.sample(frac=0.05,random_state=200))
 
 
 		return (train_dataset, test_dataset, unsupervised_dataset)
