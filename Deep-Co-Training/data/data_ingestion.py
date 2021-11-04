@@ -28,6 +28,11 @@ class DataIngestion:
 		dataset = dataset.shuffle(buffer_size=self.buffer_size).batch(self.batch_size)
 		return dataset
 	
+	def create_unsupervised_split(self, df):
+		unsupervised_df = df.sample(frac=0.6, random_state=200)
+		train_df = df.drop(unsupervised_df.index)
+		return (train_df, unsupervised_df)
+
 	def load_dataset(self):
 		curPath = os.getcwd()
 		parentDir = os.path.abspath(os.path.join(curPath, os.pardir))
@@ -48,7 +53,11 @@ class DataIngestion:
 		df_test = pd.read_csv(dockerDatasetPath_test,names=header_list)
 		df_test = self.preprocess_dataset(df_test)
 
+		(df_train, df_unsupervised) = self.create_unsupervised_split(df_train)
+
 		train_dataset = self.create_tensors(df_train)
 		test_dataset = self.create_tensors(df_test)
+		unsupervised_dataset = self.create_tensors(df_unsupervised)
 
-		return (train_dataset, test_dataset)
+
+		return (train_dataset, test_dataset, unsupervised_dataset)
