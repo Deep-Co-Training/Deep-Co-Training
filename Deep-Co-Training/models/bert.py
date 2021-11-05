@@ -38,12 +38,14 @@ class Bert:
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name="text")
         preprocessing_layer = hub.KerasLayer(tfhub_handle_preprocess, name="preprocessing")
         encoder_inputs = preprocessing_layer(text_input)
-        encoder = hub.KerasLayer(tfhub_handle_encoder, trainable=True, name="BERT_encoder")
+        encoder = hub.KerasLayer(tfhub_handle_encoder, trainable=False, name="BERT_encoder")
         outputs = encoder(encoder_inputs)
         net = outputs["pooled_output"]
         # The dense layer goes here
         net = tf.keras.layers.Dropout(0.1)(net)
-        net = tf.keras.layers.Dense(1, activation=None, name="classifier")(net)
+        net = tf.keras.layers.Dense(128, activation='relu')(net)
+        net = tf.keras.layers.Dense(16, activation='relu')(net)
+        net = tf.keras.layers.Dense(1, activation='sigmoid', name="classifier")(net)
         
         model = tf.keras.Model(text_input, net)
         return model
