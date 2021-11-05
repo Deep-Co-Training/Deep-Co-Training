@@ -30,8 +30,9 @@ if gpus:
 
 
 
-EPOCHS=1
-batch_size = 6
+EPOCHS=5
+batch_size = 16
+buffer_size = 16
 
 # Instantiate an optimizer to train the model.
 optimizer = keras.optimizers.Adam()
@@ -100,16 +101,25 @@ def create_dataset(topk_positive, topk_negative, predictions, unsupervised_datas
 	pseudo_label = []
 	unsupervised_dataset = list(unsupervised_dataset.unbatch().as_numpy_iterator())
 	print('unsupervised_dataset len',len(unsupervised_dataset))
+	print(topk_positive[0][0])
+	print('unsupervised_dataset', unsupervised_dataset[topk_positive[0][0]])
 	for i in range(len(topk_positive)):
-		x.append(unsupervised_dataset[topk_positive[0][i]])
-		pseudo_label.append(predictions[topk_positive[0][i]])
-		x.append(unsupervised_dataset[topk_negative[0][i]])
-		pseudo_label.append(predictions[topk_negative[0][i]])
+		print(i)
+		x.append(unsupervised_dataset[topk_positive[i][0]])
+		pseudo_label.append(tf.cast(np.round(predictions[topk_positive[i][0]]), 
+			tf.int64))
+		x.append(unsupervised_dataset[topk_negative[i][0]])
+		pseudo_label.append(tf.cast(np.round(predictions[topk_negative[i][0]]), 
+			tf.int64))
 
 	dataset = tf.data.Dataset.from_tensor_slices((x, pseudo_label))
+	return dataset
 
 def append_dataset(d1, d2):
-	return d1.concatenate(d2)
+	temp_dataset = d1.concatenate(d2)
+	print(temp_dataset)
+	dataset = temp_dataset.batch(batch_size)
+	return dataset
 
 def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 	for epoch in range(EPOCHS):
@@ -188,8 +198,8 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 
 		print('unsupervised_dataset: ',len(unsupervised_dataset))
 
-		predictions_c1 = c1.predict(unsupervised_dataset, batch_size=16)
-		predictions_c2 = c2.predict(unsupervised_dataset, batch_size=16)
+		predictions_c1 = c1.predict(unsupervised_dataset, batch_size=batch_size)
+		predictions_c2 = c2.predict(unsupervised_dataset, batch_size=batch_size)
 
 		print("predictions c1 shape:", predictions_c1.shape)
 		print("predictions c1:", predictions_c1)
@@ -197,17 +207,18 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		print("predictions c2 shape:", predictions_c2.shape)
 		print("predictions c2:", predictions_c2)
 		
-		(topk_c1_positive, topk_c1_negative) = top_k(predictions_c1,10)
-		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,10)
+		(topk_c1_positive, topk_c1_negative) = top_k(predictions_c1,16)
+		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,16)
 
 		topk_c1_dataset = create_dataset(topk_c1_positive, topk_c1_negative, 
 			predictions_c1, unsupervised_dataset)
 		topk_c2_dataset = create_dataset(topk_c2_positive, topk_c2_negative, 
 			predictions_c2, unsupervised_dataset)
-
 		topk_dataset = append_dataset(topk_c1_dataset, topk_c2_dataset)
-		train_dataset = append_dataset(train_dataset, topk_dataset)
-
+		print(train_dataset)
+		print(train_dataset.unbatch())
+		train_dataset = append_dataset(train_dataset.unbatch(), topk_dataset.unbatch())
+		print(train_dataset)
 
 def deep_co_training():
 	'''Main method which executes the entire data processing
@@ -224,8 +235,8 @@ def deep_co_training():
 	# DATA INGESTION
 
 	dataset_obj = DataIngestion(dataset_path="datasets/yelp_polarity_reviews",
-		batch_size = 16,
-		buffer_size = 16)
+		batch_size = batch_size,
+		buffer_size = buffer_size)
 	(train_dataset, test_dataset, unsupervised_dataset) = DataIngestion.load_dataset(dataset_obj)
 	
 	# Load constants
