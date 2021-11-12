@@ -24,13 +24,10 @@ class Lstm:
         )(model)
         model = TimeDistributed(Dense(1, activation="relu"))(model)
         model = Flatten()(model)
-        model = Dense(1, activation="relu")(model)
-        output = Dense(3, activation="softmax")(model)
+        model = Dense(128, activation="relu")(model)
+        model = Dense(16, activation="relu")(model)
+        output = Dense(1, activation="sigmoid")(model)
         model = Model(text_input, output)
-        model.compile(
-            loss="sparse_categorical_crossentropy",
-            optimizer="adam",
-            metrics=["accuracy"],
         )
         return model
 
