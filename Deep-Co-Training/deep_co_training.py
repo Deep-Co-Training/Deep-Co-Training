@@ -35,10 +35,14 @@ batch_size = 16
 buffer_size = 16
 
 # Instantiate an optimizer to train the model.
-optimizer = keras.optimizers.Adam()
+optimizer_c1 = keras.optimizers.Adam()
 # Instantiate a loss function.
-loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
+loss_fn_c1 = keras.losses.BinaryCrossentropy()
 
+# Instantiate an optimizer to train the model.
+optimizer_c2 = keras.optimizers.Adam()
+# Instantiate a loss function.
+loss_fn_c2 = keras.losses.BinaryCrossentropy()
 
 #Create stateful metrics that can be used to accumulate values during training and logged at any point
 train_loss_clf1 = tf.keras.metrics.Mean(name='train_loss', dtype=tf.float32)
@@ -67,40 +71,50 @@ test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
 
 
 @tf.function
-def train_step(x, y, model_c1, model_c2):
+def train_step_c1(x, y, model_c1):
 	with tf.GradientTape() as tape:
 		logits_c1 = model_c1(x, training=True)
-		loss_value_c1 = loss_fn(y, logits)
+		loss_value_c1 = loss_fn_c1(y, logits_c1)
 
 	# Calculate gradient and update weights for c2 using c1 loss
-	grads = tape.gradient(loss_value, model_c2.trainable_weights)
-	optimizer.apply_gradients(zip(grads, model_c2.trainable_weights))
+	grads_c1 = tape.gradient(loss_value_c1, model_c1.trainable_weights)
+	optimizer_c1.apply_gradients(zip(grads_c1, model_c1.trainable_weights))
 
 	# update the train values to log
 	train_loss_clf1(loss_value_c1)
 	train_accuracy_clf1(y, logits_c1)
+	
+	return (logits_c1)
 
+@tf.function
+def train_step_c2(x, y, model_c2):
 	with tf.GradientTape() as tape:
 		logits_c2 = model_c2(x, training=True)
-		loss_value_c2 = loss_fn(y, logits)
+		loss_value_c2 = loss_fn_c2(y, logits_c2)
 
 	# Calculate gradient and update weights for c1 using c2 loss
-	grads = tape.gradient(loss_value, model_c1.trainable_weights)
-	optimizer.apply_gradients(zip(grads, model_c1.trainable_weights))
+	grads_c2 = tape.gradient(loss_value_c2, model_c2.trainable_weights)
+	optimizer_c2.apply_gradients(zip(grads_c2, model_c2.trainable_weights))
 
 	# update the train values to log
 	train_loss_clf2(loss_value_c2)
 	train_accuracy_clf2(y, logits_c2)
-	
-	return (logits_c1, logits_c2)
 
-# @tf.function
-def test_step(x, y, model, val_acc_metric, val_loss_metric):
-	val_logits = model(x, training=False)
+	return(loss_value_c2)
 
-	# Update test metrics for logs
-	val_acc_metric(y, val_logits)
-	val_loss_metric(val_logits)
+
+@tf.function
+def test_step(x, y, model_c1, model_c2):
+	val_logits_c1 = model_c1(x, training=False)
+	val_logits_c2 = model_c2(x, training=False)
+
+	# Update test metrics for classifier 1
+	test_accuracy_clf1(y, val_logits_c1)
+	test_loss_clf1(val_logits_c1)
+
+	# Update test metrics for classifier 2
+	test_accuracy_clf2(y, val_logits_c2)
+	test_loss_clf2(val_logits_c1)
 
 def top_k(predictions, k):
 	predictions_sorted = tf.argsort(predictions, axis=0, direction='DESCENDING').numpy()
@@ -143,37 +157,37 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 
 		# Iterate over the batches of the dataset.
 		for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
-			print(step)
-			loss_values = train_step(x_batch_train, y_batch_train, c1, c2)
+			print(step, end=' ')
+			loss_value_c1 = train_step_c1(x_batch_train, y_batch_train, c1)
+			loss_value_c2 = train_step_c2(x_batch_train, y_batch_train, c2)
 
 
-		# Use tf.summary.scalar() to log metrics with the scope of the summary writers 
+		# Use tf.summary.scalar() to log metrics with the scope of the summary writers
+		# Logging the train values for classifier 1
 		with train_summary_writer_clf1.as_default():
 			tf.summary.scalar('loss', train_loss_clf1.result(), step=epoch)
 			tf.summary.scalar('accuracy', train_accuracy_clf1.result(), step=epoch)
-
 		
-
+		# Logging the train values for classifier 3
 		with train_summary_writer_clf2.as_default():
 				tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
-				tf.summary.scalar('accuracy', train_acc_c2, step=epoch)
-
+				tf.summary.scalar('accuracy', train_accuracy_clf2.result(), step=epoch)
 		
-
 		# Display metrics at the end of each epoch.
 		# print("Training acc over epoch: %.4f" % (float(train_acc_c1),))
 		# print("Training acc over epoch: %.4f" % (float(train_acc_c2),))
 
 		# Run a validation loop at the end of each epoch.
 		for x_batch_val, y_batch_val in test_dataset:
-			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf1, test_loss_clf1)
-			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf2, test_loss_clf2)
+			test_step(x_batch_val, y_batch_val, c1, c2)
 
-
+		# Use tf.summary.scalar() to log metrics with the scope of the summary writers
+		# Logging the test values for classifier 1
 		with test_summary_writer_clf1.as_default():
 			tf.summary.scalar('loss', test_loss_clf1.result(), step=epoch)
 			tf.summary.scalar('accuracy', test_accuracy_clf1.result(), step=epoch)
-
+		
+		# Logging the test values for classifier 2
 		with test_summary_writer_clf2.as_default():
 			tf.summary.scalar('loss', test_loss_clf2.result(), step=epoch)
 			tf.summary.scalar('accuracy', test_accuracy_clf2.result(), step=epoch)
@@ -190,6 +204,11 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 			train_accuracy_clf1.result()*100,
 			test_loss_clf1.result(), 
 			test_accuracy_clf1.result()*100))
+		print ('C2:\n',template.format(epoch+1,
+			train_loss_clf2.result(), 
+			train_accuracy_clf2.result()*100,
+			test_loss_clf2.result(), 
+			test_accuracy_clf2.result()*100))
 
 		# Reset training metrics at the end of each epoch
 
