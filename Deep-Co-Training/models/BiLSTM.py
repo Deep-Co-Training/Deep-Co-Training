@@ -28,7 +28,6 @@ class Lstm:
         model = Dense(16, activation="relu")(model)
         output = Dense(1, activation="sigmoid")(model)
         model = Model(text_input, output)
-        )
         return model
 
 
