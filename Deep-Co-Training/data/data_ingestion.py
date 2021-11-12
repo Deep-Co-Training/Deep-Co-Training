@@ -10,6 +10,9 @@ class DataIngestion:
 	"""Class for ingesting data from the dataset directory"""
 
 	def __init__(self,dataset_path,batch_size,buffer_size):
+		"""
+
+		"""
 		self.dataset_path = dataset_path
 		self.batch_size = batch_size
 		self.buffer_size = buffer_size
@@ -67,9 +70,9 @@ class DataIngestion:
 
 		(df_train, df_unsupervised) = self.create_unsupervised_split(df_train)
 
-		train_dataset = self.create_tensors(df_train)
-		test_dataset = self.create_tensors(df_test)
-		unsupervised_dataset = self.create_tensors(df_unsupervised)
+		train_dataset = self.create_tensors(df_train.sample(frac=0.001,random_state=200))
+		test_dataset = self.create_tensors(df_test.sample(frac=0.001,random_state=200))
+		unsupervised_dataset = self.create_tensors(df_unsupervised.sample(frac=0.001,random_state=200))
 
 		print(len(train_dataset))
 		print(len(test_dataset))

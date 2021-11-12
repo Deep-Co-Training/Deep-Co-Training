@@ -30,7 +30,7 @@ if gpus:
 
 
 
-EPOCHS=5
+EPOCHS=3
 batch_size = 16
 buffer_size = 16
 
@@ -67,32 +67,47 @@ test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
 
 
 @tf.function
-def train_step(x, y, model, train_acc_metric):
+def train_step(x, y, model_c1, model_c2):
 	with tf.GradientTape() as tape:
-		logits = model(x, training=True)
-		print('LOGITS',logits)
-		top = tf.reduce_max(logits, axis=1)
-		print('ARGMAX', top)
-		print('y',y)
-		loss_value = loss_fn(y, logits)
-		print('LOSS VAL',loss_value)
-	grads = tape.gradient(loss_value, model.trainable_weights)
-	optimizer.apply_gradients(zip(grads, model.trainable_weights))
-	train_acc_metric.update_state(y, logits)
+		logits_c1 = model_c1(x, training=True)
+		loss_value_c1 = loss_fn(y, logits)
+
+	# Calculate gradient and update weights for c2 using c1 loss
+	grads = tape.gradient(loss_value, model_c2.trainable_weights)
+	optimizer.apply_gradients(zip(grads, model_c2.trainable_weights))
+
+	# update the train values to log
+	train_loss_clf1(loss_value_c1)
+	train_accuracy_clf1(y, logits_c1)
+
+	with tf.GradientTape() as tape:
+		logits_c2 = model_c2(x, training=True)
+		loss_value_c2 = loss_fn(y, logits)
+
+	# Calculate gradient and update weights for c1 using c2 loss
+	grads = tape.gradient(loss_value, model_c1.trainable_weights)
+	optimizer.apply_gradients(zip(grads, model_c1.trainable_weights))
+
+	# update the train values to log
+	train_loss_clf2(loss_value_c2)
+	train_accuracy_clf2(y, logits_c2)
 	
-	return loss_value
+	return (logits_c1, logits_c2)
 
 # @tf.function
-def test_step(x, y, model, val_acc_metric):
+def test_step(x, y, model, val_acc_metric, val_loss_metric):
 	val_logits = model(x, training=False)
-	val_acc_metric.update_state(y, val_logits)
+
+	# Update test metrics for logs
+	val_acc_metric(y, val_logits)
+	val_loss_metric(val_logits)
 
 def top_k(predictions, k):
 	predictions_sorted = tf.argsort(predictions, axis=0, direction='DESCENDING').numpy()
 	top_k_positive = predictions_sorted[:k]
 	top_k_negative = predictions_sorted[-k:]
-	print('top k positive', top_k_positive)
-	print('top k negative', top_k_negative)
+	# print('top k positive', top_k_positive)
+	# print('top k negative', top_k_negative)
 
 	return(top_k_positive, top_k_negative)
 
@@ -128,50 +143,31 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 
 		# Iterate over the batches of the dataset.
 		for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
-
 			print(step)
-			loss_value_c1 = train_step(x_batch_train, y_batch_train, c1, train_accuracy_clf1)
-			train_acc_c1 = train_accuracy_clf1.result()
+			loss_values = train_step(x_batch_train, y_batch_train, c1, c2)
 
-			# Log every batch.
-			print(
-				"Training loss_c1 (for one batch) at step %d: %.4f"
-				% (step, float(loss_value_c1))
-			)
 
-			# Use tf.summary.scalar() to log metrics with the scope of the summary writers 
-			with train_summary_writer_clf1.as_default():
-				tf.summary.scalar('loss', loss_value_c1, step=epoch)
-				tf.summary.scalar('accuracy', train_acc_c1, step=epoch)
+		# Use tf.summary.scalar() to log metrics with the scope of the summary writers 
+		with train_summary_writer_clf1.as_default():
+			tf.summary.scalar('loss', train_loss_clf1.result(), step=epoch)
+			tf.summary.scalar('accuracy', train_accuracy_clf1.result(), step=epoch)
 
-			train_loss_clf1.reset_states()
-			train_accuracy_clf1.reset_states()
+		
 
-			loss_value_c2 = train_step(x_batch_train, y_batch_train, c2, train_accuracy_clf2)
-			train_acc_c2 = train_accuracy_clf2.result()
-
-			with train_summary_writer_clf2.as_default():
-				tf.summary.scalar('loss', loss_value_c2, step=epoch)
+		with train_summary_writer_clf2.as_default():
+				tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
 				tf.summary.scalar('accuracy', train_acc_c2, step=epoch)
-			
-			print(
-				"Training loss_c2 (for one batch) at step %d: %.4f"
-				% (step, float(loss_value_c2))
-			)
-			print("Seen so far: %d samples" % ((step + 1) * 12))
 
-			train_loss_clf2.reset_states()
-			train_accuracy_clf2.reset_states()
+		
 
 		# Display metrics at the end of each epoch.
-    
-		print("Training acc over epoch: %.4f" % (float(train_acc_c1),))
-		print("Training acc over epoch: %.4f" % (float(train_acc_c2),))
+		# print("Training acc over epoch: %.4f" % (float(train_acc_c1),))
+		# print("Training acc over epoch: %.4f" % (float(train_acc_c2),))
 
 		# Run a validation loop at the end of each epoch.
 		for x_batch_val, y_batch_val in test_dataset:
-			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf1)
-			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf2)
+			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf1, test_loss_clf1)
+			test_step(x_batch_val, y_batch_val, c1, test_accuracy_clf2, test_loss_clf2)
 
 
 		with test_summary_writer_clf1.as_default():
@@ -184,11 +180,24 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 
 		val_acc1 = test_accuracy_clf1.result()
 		val_acc2 = test_accuracy_clf2.result()
-		print("Validation c1 acc: %.4f" % (float(val_acc1),))
-		print("Validation c2 acc: %.4f" % (float(val_acc2),))		
-		print("Time taken: %.2fs" % (time.time() - start_time))
+		# print("Validation c1 acc: %.4f" % (float(val_acc1),))
+		# print("Validation c2 acc: %.4f" % (float(val_acc2),))		
+		# print("Time taken: %.2fs" % (time.time() - start_time))
+
+		template = 'Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}'
+		print ('C1:\n',template.format(epoch+1,
+			train_loss_clf1.result(), 
+			train_accuracy_clf1.result()*100,
+			test_loss_clf1.result(), 
+			test_accuracy_clf1.result()*100))
 
 		# Reset training metrics at the end of each epoch
+
+		train_loss_clf1.reset_states()
+		train_accuracy_clf1.reset_states()
+
+		train_loss_clf2.reset_states()
+		train_accuracy_clf2.reset_states()
 
 		test_loss_clf1.reset_states()
 		test_accuracy_clf1.reset_states()
@@ -196,16 +205,16 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		test_loss_clf2.reset_states()
 		test_accuracy_clf2.reset_states()
 
-		print('unsupervised_dataset: ',len(unsupervised_dataset))
+		# print('unsupervised_dataset: ',len(unsupervised_dataset))
 
 		predictions_c1 = c1.predict(unsupervised_dataset, batch_size=batch_size)
 		predictions_c2 = c2.predict(unsupervised_dataset, batch_size=batch_size)
 
-		print("predictions c1 shape:", predictions_c1.shape)
-		print("predictions c1:", predictions_c1)
+		# print("predictions c1 shape:", predictions_c1.shape)
+		# print("predictions c1:", predictions_c1)
 
-		print("predictions c2 shape:", predictions_c2.shape)
-		print("predictions c2:", predictions_c2)
+		# print("predictions c2 shape:", predictions_c2.shape)
+		# print("predictions c2:", predictions_c2)
 		
 		(topk_c1_positive, topk_c1_negative) = top_k(predictions_c1,16)
 		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,16)
