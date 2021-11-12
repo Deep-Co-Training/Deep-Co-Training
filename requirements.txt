@@ -5,3 +5,5 @@ black
 flake8
 nltk
 scikit-learn
+tf-models-official
+tensorflow-text==2.5
