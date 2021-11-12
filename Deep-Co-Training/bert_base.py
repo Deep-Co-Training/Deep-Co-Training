@@ -11,7 +11,7 @@ log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-EPOCHS=4
+EPOCHS=10
 batch_size = 32
 init_lr = 3e-5
 
@@ -19,7 +19,7 @@ init_lr = 3e-5
 # Instantiate an optimizer to train the model.
 optimizer = keras.optimizers.Adam(learning_rate=init_lr)
 # Instantiate a loss function.
-loss = keras.losses.BinaryCrossentropy()
+loss = keras.losses.BinaryCrossentropy(from_logits=True)
 
 metrics = keras.metrics.BinaryAccuracy()
 
