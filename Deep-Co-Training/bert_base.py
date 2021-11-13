@@ -43,6 +43,7 @@ print('Training Model...')
 history = base_classifier.fit(
     train_dataset,
     epochs=EPOCHS,
+    validation_data=test_dataset,
     callbacks=[tensorboard_callback]
 )
 

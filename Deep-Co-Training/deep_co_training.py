@@ -10,6 +10,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 # from official.nlp import optimization
 import numpy as np
+import pandas as pd
 
 
 from data.data_ingestion import DataIngestion
@@ -88,7 +89,7 @@ def train_step_c1(x, y, model_c1):
 
 @tf.function
 def train_step_c2(x, y, model_c2):
-	with tf.GradientTape() as tape:
+	with tf.Gradientmetrics_clf1Tape() as tape:
 		logits_c2 = model_c2(x, training=True)
 		loss_value_c2 = loss_fn_c2(y, logits_c2)
 
@@ -151,6 +152,9 @@ def append_dataset(d1, d2):
 	return dataset
 
 def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
+	metrics_clf1 = [[] for i in range(4)]
+	metrics_clf2 = [[] for i in range(4)]
+
 	for epoch in range(EPOCHS):
 		print("\nStart of epoch %d" % (epoch,))
 		start_time = time.time()
@@ -210,6 +214,20 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 			test_loss_clf2.result(), 
 			test_accuracy_clf2.result()*100))
 
+		
+		metrics_clf1[0].append(train_accuracy_clf1.result())
+		metrics_clf1[1].append(train_loss_clf1.result())
+		metrics_clf1[2].append(test_accuracy_clf1.result())
+		metrics_clf1[3].append(test_loss_clf1.result())
+
+		metrics_clf2[0].append(train_accuracy_clf2.result())
+		metrics_clf2[1].append(train_loss_clf2.result())
+		metrics_clf2[2].append(test_accuracy_clf2.result())
+		metrics_clf2[3].append(test_loss_clf2.result())
+		
+
+
+
 		# Reset training metrics at the end of each epoch
 
 		train_loss_clf1.reset_states()
@@ -247,6 +265,14 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		print(train_dataset.unbatch())
 		train_dataset = append_dataset(train_dataset.unbatch(), topk_dataset.unbatch())
 		print(train_dataset)
+	
+	metrics_clf1 = np.array(metrics_clf1)
+	metrics_clf2 = np.array(metrics_clf2)
+	pd.DataFrame(metrics_clf1).to_csv("clf1.csv")
+	pd.DataFrame(metrics_clf2).to_csv("clf2.csv")
+
+
+
 
 def deep_co_training():
 	'''Main method which executes the entire data processing
@@ -281,6 +307,9 @@ def deep_co_training():
 
 	## Training
 	custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset)
+
+	write_csv()
+
 
 	pass
 	
