@@ -31,7 +31,7 @@ if gpus:
 
 
 
-EPOCHS=3
+EPOCHS=5
 batch_size = 16
 buffer_size = 16
 
@@ -70,6 +70,8 @@ test_log_dir_clf2 = 'logs/logs_clf2/gradient_tape/' + current_time + '/test'
 train_summary_writer_clf2 = tf.summary.create_file_writer(train_log_dir_clf2)
 test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
 
+columns = ['Epoch','Train Loss','Train Accuracy','Test Loss','Test Accuracy']
+
 
 @tf.function
 def train_step_c1(x, y, model_c1):
@@ -89,7 +91,7 @@ def train_step_c1(x, y, model_c1):
 
 @tf.function
 def train_step_c2(x, y, model_c2):
-	with tf.Gradientmetrics_clf1Tape() as tape:
+	with tf.GradientTape() as tape:
 		logits_c2 = model_c2(x, training=True)
 		loss_value_c2 = loss_fn_c2(y, logits_c2)
 
@@ -152,8 +154,9 @@ def append_dataset(d1, d2):
 	return dataset
 
 def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
-	metrics_clf1 = [[] for i in range(4)]
-	metrics_clf2 = [[] for i in range(4)]
+	metrics_clf1 = pd.DataFrame(columns=columns)
+	metrics_clf2 = pd.DataFrame(columns=columns)
+	print(metrics_clf2.head())
 
 	for epoch in range(EPOCHS):
 		print("\nStart of epoch %d" % (epoch,))
@@ -174,8 +177,8 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		
 		# Logging the train values for classifier 3
 		with train_summary_writer_clf2.as_default():
-				tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
-				tf.summary.scalar('accuracy', train_accuracy_clf2.result(), step=epoch)
+			tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
+			tf.summary.scalar('accuracy', train_accuracy_clf2.result(), step=epoch)
 		
 		# Display metrics at the end of each epoch.
 		# print("Training acc over epoch: %.4f" % (float(train_acc_c1),))
@@ -214,19 +217,22 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 			test_loss_clf2.result(), 
 			test_accuracy_clf2.result()*100))
 
-		
-		metrics_clf1[0].append(train_accuracy_clf1.result())
-		metrics_clf1[1].append(train_loss_clf1.result())
-		metrics_clf1[2].append(test_accuracy_clf1.result())
-		metrics_clf1[3].append(test_loss_clf1.result())
+		train_metrics = np.concatenate((epoch,train_loss_clf1.result().numpy(),train_accuracy_clf1.result().numpy()*100,
+			test_loss_clf1.result().numpy(),test_accuracy_clf1.result().numpy()*100), axis=None)
+		print(train_metrics)
+		print(train_metrics.shape)
+		temp_df1 = pd.DataFrame(train_metrics.reshape(-1, len(train_metrics)), columns=columns)
+		print(temp_df1.head())
+		metrics_clf1 = pd.concat([temp_df1, metrics_clf1])
+		print(metrics_clf1.head())
 
-		metrics_clf2[0].append(train_accuracy_clf2.result())
-		metrics_clf2[1].append(train_loss_clf2.result())
-		metrics_clf2[2].append(test_accuracy_clf2.result())
-		metrics_clf2[3].append(test_loss_clf2.result())
-		
+		test_metrics = np.concatenate((epoch,train_loss_clf1.result().numpy(),train_accuracy_clf1.result().numpy()*100,
+			test_loss_clf1.result().numpy(),test_accuracy_clf1.result().numpy()*100), axis=None)
 
-
+		temp_df2 = pd.DataFrame(test_metrics.reshape(-1, len(test_metrics)), columns=columns)
+		print(temp_df2.head())
+		metrics_clf2 = pd.concat([temp_df2, metrics_clf2])
+		print(metrics_clf2.head())
 
 		# Reset training metrics at the end of each epoch
 
@@ -266,10 +272,8 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		train_dataset = append_dataset(train_dataset.unbatch(), topk_dataset.unbatch())
 		print(train_dataset)
 	
-	metrics_clf1 = np.array(metrics_clf1)
-	metrics_clf2 = np.array(metrics_clf2)
-	pd.DataFrame(metrics_clf1).to_csv("clf1.csv")
-	pd.DataFrame(metrics_clf2).to_csv("clf2.csv")
+	metrics_clf1.to_csv("logs/clf1.csv")
+	metrics_clf2.to_csv("logs/clf2.csv")
 
 
 
@@ -307,9 +311,6 @@ def deep_co_training():
 
 	## Training
 	custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset)
-
-	write_csv()
-
 
 	pass
 	
