@@ -15,6 +15,7 @@ import pandas as pd
 
 from data.data_ingestion import DataIngestion
 from models.bert import Bert
+from models.BiLSTM import Bi_LSTM
 
 tf.config.run_functions_eagerly(True)
 gpus = tf.config.list_physical_devices('GPU')

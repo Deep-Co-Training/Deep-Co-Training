@@ -18,7 +18,7 @@ max_len = 300
 embedding_matrix = np.random.random((vocab_size, 1))
 
 
-class Lstm:
+class Bi_LSTM:
     def __init__(self):
         pass
 
