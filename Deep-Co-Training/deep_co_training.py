@@ -305,7 +305,7 @@ def deep_co_training():
 	c1.summary()
 
 	# LOAD CLASSIFIER 2
-	c2 = Bert.get_model()
+	c2 = Bi_LSTM.get_model()
 	c2.summary()
 
 	# Initialize optimizer and loss function
