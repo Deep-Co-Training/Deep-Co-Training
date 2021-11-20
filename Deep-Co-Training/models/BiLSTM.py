@@ -9,28 +9,19 @@ import numpy as np
 
 import tensorflow_text as text
 
-vectorize_layer = TextVectorization(max_tokens=max_features,
-    output_mode='int',output_sequence_length=max_len)
+elmo = hub.load("https://tfhub.dev/google/elmo/3", trainable=False)
+
 
 class Bi_LSTM:
     def __init__(self):
         pass
 
     def get_model():
-        model = Sequential()
 
-        model.add(Input(shape=(), dtype=tf.string, name="text"))
-        model.add(vectorize_layer)
-        print(vectorize_layer)
-        model.add(Bidirectional(
-            LSTM(50, return_sequences=True, dropout=0.50), merge_mode="concat"
-        ))
-        # model = TimeDistributed(Dense(1, activation="relu"))(model)
-        model.add(Flatten())
-        model.add(Dense(128, activation="relu"))
-        model.add(Dense(16, activation="relu"))
-        model.add(Dense(1, activation="sigmoid"))
-        model._name = "Custom Bi_LSTM"
+        inputs = Input(shape=(), dtype=tf.string, name="text")
+        embeddings = elmo(inputs)
+
+        model._name = "Pretrained Bi_LSTM"
         return model
 
 if __name__ == "__main__":
