@@ -48,6 +48,7 @@ class Bert:
         net = tf.keras.layers.Dense(1, activation='sigmoid', name="classifier")(net)
         
         model = tf.keras.Model(text_input, net)
+        model.summary()
         return model
 
 

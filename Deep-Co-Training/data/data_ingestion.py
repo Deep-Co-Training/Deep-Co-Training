@@ -67,9 +67,13 @@ class DataIngestion:
 
 		(df_train, df_unsupervised) = self.create_unsupervised_split(df_train)
 
-		train_dataset = self.create_tensors(df_train)
-		test_dataset = self.create_tensors(df_test)
-		unsupervised_dataset = self.create_tensors(df_unsupervised)
+		train_dataset = self.create_tensors(df_train.sample(frac=0.08,random_state=200))
+		test_dataset = self.create_tensors(df_test.sample(frac=0.08,random_state=200))
+		unsupervised_dataset = self.create_tensors(df_unsupervised.sample(frac=0.08,random_state=200))
+
+		# train_dataset = self.create_tensors(df_train)
+		# test_dataset = self.create_tensors(df_test)
+		# unsupervised_dataset = self.create_tensors(df_unsupervised)
 
 		print(len(train_dataset))
 		print(len(test_dataset))
