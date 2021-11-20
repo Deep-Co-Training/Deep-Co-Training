@@ -8,29 +8,29 @@ import tensorflow as tf
 
 from tensorflow import keras
 from tensorflow.keras import layers
-from official.nlp import optimization
+# from official.nlp import optimization
 import numpy as np
+import pandas as pd
 
 
 from data.data_ingestion import DataIngestion
 from models.bert import Bert
 
-tf.config.run_functions_eagerly(True)
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-  try:
-    # Currently, memory growth needs to be the same across GPUs
-    for gpu in gpus:
-      tf.config.experimental.set_memory_growth(gpu, True)
-    logical_gpus = tf.config.list_logical_devices('GPU')
-    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-  except RuntimeError as e:
-    # Memory growth must be set before GPUs have been initialized
-    print(e)
+# tf.config.run_functions_eagerly(True)
+# gpus = tf.config.list_physical_devices('GPU')
+# if gpus:
+#   try:
+#     # Currently, memory growth needs to be the same across GPUs
+#     for gpu in gpus:
+#       tf.config.experimental.set_memory_grvariableevices('GPU')
+#     print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+#   except RuntimeError as e:
+#     # Memory growth must be set before GPUs have been initialized
+#     print(e)
 
 
 
-EPOCHS=3
+EPOCHS=5
 batch_size = 16
 buffer_size = 16
 
@@ -45,15 +45,15 @@ optimizer_c2 = keras.optimizers.Adam()
 loss_fn_c2 = keras.losses.BinaryCrossentropy()
 
 #Create stateful metrics that can be used to accumulate values during training and logged at any point
-train_loss_clf1 = tf.keras.metrics.Mean(name='train_loss', dtype=tf.float32)
-train_accuracy_clf1 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf1 = tf.keras.metrics.Mean(name='test_loss', dtype=tf.float32)
-test_accuracy_clf1 = keras.metrics.BinaryAccuracy('test_accuracy')
+train_loss_clf1 = tf.keras.metrics.Mean(name='train_loss_clf1', dtype=tf.float32)
+train_accuracy_clf1 = keras.metrics.BinaryAccuracy('train_accuracy_clf1')
+test_loss_clf1 = tf.keras.metrics.Mean(name='test_loss_clf1', dtype=tf.float32)
+test_accuracy_clf1 = keras.metrics.BinaryAccuracy('test_accuracy_clf1')
 
-train_loss_clf2 = tf.keras.metrics.Mean(name='train_loss', dtype=tf.float32)
-train_accuracy_clf2 = keras.metrics.BinaryAccuracy('train_accuracy')
-test_loss_clf2 = tf.keras.metrics.Mean(name='test_loss', dtype=tf.float32)
-test_accuracy_clf2 = keras.metrics.BinaryAccuracy('test_accuracy')
+train_loss_clf2 = tf.keras.metrics.Mean(name='train_loss_clf2', dtype=tf.float32)
+train_accuracy_clf2 = keras.metrics.BinaryAccuracy('train_accuracy_clf2')
+test_loss_clf2 = tf.keras.metrics.Mean(name='test_loss_clf2', dtype=tf.float32)
+test_accuracy_clf2 = keras.metrics.BinaryAccuracy('test_accuracy_clf2')
 
 
 #Set up summary writers to write the summaries to disk in a different logs directory
@@ -69,6 +69,37 @@ test_log_dir_clf2 = 'logs/logs_clf2/gradient_tape/' + current_time + '/test'
 train_summary_writer_clf2 = tf.summary.create_file_writer(train_log_dir_clf2)
 test_summary_writer_clf2 = tf.summary.create_file_writer(test_log_dir_clf2)
 
+columns = ['Epoch','Train Loss','Train Accuracy','Test Loss','Test Accuracy']
+
+
+@tf.function
+def ultimate_train_step(x, y, model_c1, model_c2):
+	with tf.GradientTape() as tape1:
+		logits_c1 = model_c1(x, training=True)
+		loss_value_c1 = loss_fn_c1(y, logits_c1)
+
+	with tf.GradientTape() as tape2:
+		logits_c2 = model_c2(x, training=True)
+		loss_value_c2 = loss_fn_c2(y, logits_c2)
+
+	grads_c1 = tape1.gradient(loss_value_c1, model_c1.trainable_weights)
+	grads_c2 = tape2.gradient(loss_value_c2, model_c2.trainable_weights)
+
+	# Running one step of gradient descent.
+	# Done by updating the value of the variables to minimize the loss. 
+	optimizer_c1.apply_gradients(zip(grads_c2, model_c1.trainable_weights))
+	optimizer_c2.apply_gradients(zip(grads_c1, model_c2.trainable_weights))
+
+	train_loss_clf1(loss_value_c1)
+	train_accuracy_clf1.update_state(y, logits_c1)
+
+	train_loss_clf2(loss_value_c2)
+	train_accuracy_clf2.update_state(y, logits_c2)
+
+	return loss_value_c1, loss_value_c2
+
+
+
 
 @tf.function
 def train_step_c1(x, y, model_c1):
@@ -76,9 +107,10 @@ def train_step_c1(x, y, model_c1):
 		logits_c1 = model_c1(x, training=True)
 		loss_value_c1 = loss_fn_c1(y, logits_c1)
 
+	print('Loss value C1:', loss_value_c1)
 	# Calculate gradient and update weights for c2 using c1 loss
 	grads_c1 = tape.gradient(loss_value_c1, model_c1.trainable_weights)
-	optimizer_c1.apply_gradients(zip(grads_c1, model_c1.trainable_weights))
+	optimizer_c2.apply_gradients(zip(grads_c1, model_c1.trainable_weights))
 
 	# update the train values to log
 	train_loss_clf1(loss_value_c1)
@@ -92,9 +124,10 @@ def train_step_c2(x, y, model_c2):
 		logits_c2 = model_c2(x, training=True)
 		loss_value_c2 = loss_fn_c2(y, logits_c2)
 
+	print('Loss value C1:', loss_value_c2)
 	# Calculate gradient and update weights for c1 using c2 loss
 	grads_c2 = tape.gradient(loss_value_c2, model_c2.trainable_weights)
-	optimizer_c2.apply_gradients(zip(grads_c2, model_c2.trainable_weights))
+	optimizer_c1.apply_gradients(zip(grads_c2, model_c2.trainable_weights))
 
 	# update the train values to log
 	train_loss_clf2(loss_value_c2)
@@ -129,11 +162,11 @@ def create_dataset(topk_positive, topk_negative, predictions, unsupervised_datas
 	x = []
 	pseudo_label = []
 	unsupervised_dataset = list(unsupervised_dataset.unbatch().as_numpy_iterator())
-	print('unsupervised_dataset len',len(unsupervised_dataset))
-	print(topk_positive[0][0])
-	print('unsupervised_dataset', unsupervised_dataset[topk_positive[0][0]])
+	# print('unsupervised_dataset len',len(unsupervised_dataset))
+	# print(topk_positive[0][0])
+	# print('unsupervised_dataset', unsupervised_dataset[topk_positive[0][0]])
 	for i in range(len(topk_positive)):
-		print(i)
+		# print(i)
 		x.append(unsupervised_dataset[topk_positive[i][0]])
 		pseudo_label.append(tf.cast(np.round(predictions[topk_positive[i][0]]), 
 			tf.int64))
@@ -151,6 +184,10 @@ def append_dataset(d1, d2):
 	return dataset
 
 def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
+	metrics_clf1 = pd.DataFrame(columns=columns)
+	metrics_clf2 = pd.DataFrame(columns=columns)
+	print(metrics_clf2.head())
+
 	for epoch in range(EPOCHS):
 		print("\nStart of epoch %d" % (epoch,))
 		start_time = time.time()
@@ -158,8 +195,10 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		# Iterate over the batches of the dataset.
 		for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
 			print(step, end=' ')
-			loss_value_c1 = train_step_c1(x_batch_train, y_batch_train, c1)
-			loss_value_c2 = train_step_c2(x_batch_train, y_batch_train, c2)
+			# loss_value_c1 = train_step_c1(x_batch_train, y_batch_train, c1)
+			# loss_value_c2 = train_step_c2(x_batch_train, y_batch_train, c2)
+
+			loss_value_c1, loss_value_c2 = ultimate_train_step(x_batch_train, y_batch_train, c1, c2)
 
 
 		# Use tf.summary.scalar() to log metrics with the scope of the summary writers
@@ -170,8 +209,8 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		
 		# Logging the train values for classifier 3
 		with train_summary_writer_clf2.as_default():
-				tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
-				tf.summary.scalar('accuracy', train_accuracy_clf2.result(), step=epoch)
+			tf.summary.scalar('loss', train_loss_clf2.result(), step=epoch)
+			tf.summary.scalar('accuracy', train_accuracy_clf2.result(), step=epoch)
 		
 		# Display metrics at the end of each epoch.
 		# print("Training acc over epoch: %.4f" % (float(train_acc_c1),))
@@ -210,6 +249,23 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 			test_loss_clf2.result(), 
 			test_accuracy_clf2.result()*100))
 
+		train_metrics = np.concatenate((epoch,train_loss_clf1.result().numpy(),train_accuracy_clf1.result().numpy()*100,
+			test_loss_clf1.result().numpy(),test_accuracy_clf1.result().numpy()*100), axis=None)
+		print(train_metrics)
+		print(train_metrics.shape)
+		temp_df1 = pd.DataFrame(train_metrics.reshape(-1, len(train_metrics)), columns=columns)
+		print(temp_df1.head())
+		metrics_clf1 = pd.concat([temp_df1, metrics_clf1])
+		print(metrics_clf1.head())
+
+		test_metrics = np.concatenate((epoch,train_loss_clf1.result().numpy(),train_accuracy_clf1.result().numpy()*100,
+			test_loss_clf1.result().numpy(),test_accuracy_clf1.result().numpy()*100), axis=None)
+
+		temp_df2 = pd.DataFrame(test_metrics.reshape(-1, len(test_metrics)), columns=columns)
+		print(temp_df2.head())
+		metrics_clf2 = pd.concat([temp_df2, metrics_clf2])
+		print(metrics_clf2.head())
+
 		# Reset training metrics at the end of each epoch
 
 		train_loss_clf1.reset_states()
@@ -247,6 +303,12 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		print(train_dataset.unbatch())
 		train_dataset = append_dataset(train_dataset.unbatch(), topk_dataset.unbatch())
 		print(train_dataset)
+	
+	metrics_clf1.to_csv("logs/clf1.csv")
+	metrics_clf2.to_csv("logs/clf2.csv")
+
+
+
 
 def deep_co_training():
 	'''Main method which executes the entire data processing
