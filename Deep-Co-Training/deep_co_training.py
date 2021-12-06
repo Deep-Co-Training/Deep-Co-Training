@@ -304,8 +304,8 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		train_dataset = append_dataset(train_dataset.unbatch(), topk_dataset.unbatch())
 		print(train_dataset)
 	
-	metrics_clf1.to_csv("logs/clf1.csv")
-	metrics_clf2.to_csv("logs/clf2.csv")
+	metrics_clf1.to_csv("logs/clf1_"+k+".csv")
+	metrics_clf2.to_csv("logs/clf2_"+k+".csv")
 
 
 def deep_co_training():
