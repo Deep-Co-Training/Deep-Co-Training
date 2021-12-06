@@ -72,7 +72,7 @@ class DataIngestion:
 
 		train_dataset = self.create_tensors(df_train.sample(frac=0.001,random_state=200))
 		test_dataset = self.create_tensors(df_test.sample(frac=0.001,random_state=200))
-		unsupervised_dataset = self.create_tensors(df_unsupervised.sample(frac=0.001,random_state=200))
+		unsupervised_dataset = self.create_tensors(df_unsupervised.sample(frac=0.05,random_state=200))
 
 		print(len(train_dataset))
 		print(len(test_dataset))

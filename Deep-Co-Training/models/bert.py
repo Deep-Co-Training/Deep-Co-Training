@@ -142,35 +142,55 @@ map_model_to_preprocess = {
         'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3',
 }
 
-bert_model_name = "bert_en_uncased_L-12_H-768_A-12"
+bert_model_name_clf1 = 'small_bert/bert_en_uncased_L-4_H-256_A-4'
 
-tfhub_handle_encoder = map_name_to_handle[bert_model_name]
-tfhub_handle_preprocess = map_model_to_preprocess[bert_model_name]
+bert_model_name_clf2 =  'small_bert/bert_en_uncased_L-6_H-256_A-4'
 
-print(f"BERT model selected           : {tfhub_handle_encoder}")
-print(f"Preprocess model auto-selected: {tfhub_handle_preprocess}")
+tfhub_handle_encoder_clf1 = map_name_to_handle[bert_model_name_clf1]
+tfhub_handle_preprocess_clf1 = map_model_to_preprocess[bert_model_name_clf1]
 
+tfhub_handle_encoder_clf2 = map_name_to_handle[bert_model_name_clf2]
+tfhub_handle_preprocess_clf2 = map_model_to_preprocess[bert_model_name_clf2]
+
+print(f"BERT model selected clf1           : {tfhub_handle_encoder_clf1}")
+print(f"Preprocess model auto-selected clf1: {tfhub_handle_preprocess_clf1}")
+
+print(f"BERT model selected clf2           : {tfhub_handle_encoder_clf2}")
+print(f"Preprocess model auto-selected clf2: {tfhub_handle_preprocess_clf2}")
 
 class Bert:
 
     def __init__(self):
         pass
 
-    def get_model():
+    def get_model(self):
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name="text")
-        preprocessing_layer = hub.KerasLayer(tfhub_handle_preprocess, name="preprocessing")
+        preprocessing_layer = hub.KerasLayer(tfhub_handle_preprocess_clf1, name="preprocessing")
         encoder_inputs = preprocessing_layer(text_input)
-        encoder = hub.KerasLayer(tfhub_handle_encoder, trainable=False, name="BERT_encoder")
+        encoder = hub.KerasLayer(tfhub_handle_encoder_clf1, trainable=False, name="BERT_encoder")
         outputs = encoder(encoder_inputs)
         net = outputs["pooled_output"]
-        # The dense layer goes here
         net = tf.keras.layers.Dropout(0.1)(net)
         net = tf.keras.layers.Dense(128, activation='relu', trainable=True)(net)
         net = tf.keras.layers.Dense(16, activation='relu', trainable=True)(net)
         net = tf.keras.layers.Dense(1, activation='sigmoid', name="classifier", trainable=True)(net)
         
-        model = tf.keras.Model(text_input, net)
-        return model
+        model1 = tf.keras.Model(text_input, net)
+
+        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name="text")
+        preprocessing_layer = hub.KerasLayer(tfhub_handle_preprocess_clf2, name="preprocessing")
+        encoder_inputs = preprocessing_layer(text_input)
+        encoder = hub.KerasLayer(tfhub_handle_encoder_clf2, trainable=False, name="BERT_encoder")
+        outputs = encoder(encoder_inputs)
+        net = outputs["pooled_output"]
+        net = tf.keras.layers.Dropout(0.1)(net)
+        net = tf.keras.layers.Dense(128, activation='relu', trainable=True)(net)
+        net = tf.keras.layers.Dense(16, activation='relu', trainable=True)(net)
+        net = tf.keras.layers.Dense(1, activation='sigmoid', name="classifier", trainable=True)(net)
+        
+        model2 = tf.keras.Model(text_input, net)
+        
+        return model1, model2
 
 
 if __name__ == "__main__":

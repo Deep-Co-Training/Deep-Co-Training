@@ -329,9 +329,9 @@ def deep_co_training():
 	
 	# Load constants
 
-
+	bert = Bert()
 	# LOAD CLASSIFIER 1 AND 2
-	c1, c2 = Bert.get_model()
+	c1, c2 = bert.get_model()
 	c1.summary()
 	c2.summary()
 
