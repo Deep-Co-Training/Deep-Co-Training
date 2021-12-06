@@ -30,7 +30,7 @@ from models.bert import Bert
 
 
 
-EPOCHS=10
+EPOCHS=25
 batch_size = 32
 buffer_size = 32
 k = 16
