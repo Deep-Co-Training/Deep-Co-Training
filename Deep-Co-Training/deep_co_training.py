@@ -30,9 +30,10 @@ from models.bert import Bert
 
 
 
-EPOCHS=5
-batch_size = 16
-buffer_size = 16
+EPOCHS=10
+batch_size = 32
+buffer_size = 32
+k = 16
 
 # Instantiate an optimizer to train the model.
 optimizer_c1 = keras.optimizers.Adam()
@@ -99,8 +100,6 @@ def ultimate_train_step(x, y, model_c1, model_c2):
 	return loss_value_c1, loss_value_c2
 
 
-
-
 @tf.function
 def train_step_c1(x, y, model_c1):
 	with tf.GradientTape() as tape:
@@ -117,6 +116,7 @@ def train_step_c1(x, y, model_c1):
 	train_accuracy_clf1(y, logits_c1)
 	
 	return (logits_c1)
+
 
 @tf.function
 def train_step_c2(x, y, model_c2):
@@ -291,8 +291,8 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		# print("predictions c2 shape:", predictions_c2.shape)
 		# print("predictions c2:", predictions_c2)
 		
-		(topk_c1_positive, topk_c1_negative) = top_k(predictions_c1,16)
-		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,16)
+		(topk_c1_positive, topk_c1_negative) = top_k(predictions_c1,k)
+		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,k)
 
 		topk_c1_dataset = create_dataset(topk_c1_positive, topk_c1_negative, 
 			predictions_c1, unsupervised_dataset)
@@ -306,8 +306,6 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 	
 	metrics_clf1.to_csv("logs/clf1.csv")
 	metrics_clf2.to_csv("logs/clf2.csv")
-
-
 
 
 def deep_co_training():
@@ -331,12 +329,10 @@ def deep_co_training():
 	
 	# Load constants
 
-	# LOAD CLASSIFIER 1
-	c1 = Bert.get_model()
-	c1.summary()
 
-	# LOAD CLASSIFIER 2
-	c2 = Bert.get_model()
+	# LOAD CLASSIFIER 1 AND 2
+	c1, c2 = Bert.get_model()
+	c1.summary()
 	c2.summary()
 
 	# Initialize optimizer and loss function
@@ -344,7 +340,6 @@ def deep_co_training():
 	## Training
 	custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset)
 
-	pass
 	
 
 if __name__ == '__main__':
