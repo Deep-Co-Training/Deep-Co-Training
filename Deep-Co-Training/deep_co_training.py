@@ -159,14 +159,20 @@ def top_k(predictions, k):
 	return(top_k_positive, top_k_negative)
 
 def create_dataset(topk_positive, topk_negative, predictions, unsupervised_dataset):
+	'''Method to create tf Dataset from the top k predictions
+	'''
+
+	# The following variable holds the indepenent attributes
 	x = []
+	# The pesudo_label variable will contain the top k pesudo labels
 	pseudo_label = []
 	unsupervised_dataset = list(unsupervised_dataset.unbatch().as_numpy_iterator())
-	# print('unsupervised_dataset len',len(unsupervised_dataset))
-	# print(topk_positive[0][0])
-	# print('unsupervised_dataset', unsupervised_dataset[topk_positive[0][0]])
+	print('unsupervised_dataset len',len(unsupervised_dataset))
+	print(topk_positive[0][0])
+	print('unsupervised_dataset', unsupervised_dataset[topk_positive[0][0]])
+	# For the length of top k do the following
 	for i in range(len(topk_positive)):
-		# print(i)
+		# Append 
 		x.append(unsupervised_dataset[topk_positive[i][0]])
 		pseudo_label.append(tf.cast(np.round(predictions[topk_positive[i][0]]), 
 			tf.int64))
@@ -174,8 +180,13 @@ def create_dataset(topk_positive, topk_negative, predictions, unsupervised_datas
 		pseudo_label.append(tf.cast(np.round(predictions[topk_negative[i][0]]), 
 			tf.int64))
 
+	# Remove the values which have been added to pesudo label
+	unsupervised_dataset = set(unsupervised_dataset)-set(x)
+	unsupervised_dataset = tf.data.Dataset.from_tensor_slices(list(unsupervised_dataset))
+	print(unsupervised_dataset)
+	unsupervised_dataset = unsupervised_dataset.batch(batch_size)
 	dataset = tf.data.Dataset.from_tensor_slices((x, pseudo_label))
-	return dataset
+	return (dataset, unsupervised_dataset)
 
 def append_dataset(d1, d2):
 	temp_dataset = d1.concatenate(d2)
@@ -280,10 +291,13 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		test_loss_clf2.reset_states()
 		test_accuracy_clf2.reset_states()
 
-		# print('unsupervised_dataset: ',len(unsupervised_dataset))
+		print('unsupervised_dataset: ',len(unsupervised_dataset))
+		print('unsupervised_dataset type', type(unsupervised_dataset))
+		if(len(unsupervised_dataset)*batch_size<k):
+			break
 
 		predictions_c1 = c1.predict(unsupervised_dataset, batch_size=batch_size)
-		predictions_c2 = c2.predict(unsupervised_dataset, batch_size=batch_size)
+		
 
 		# print("predictions c1 shape:", predictions_c1.shape)
 		# print("predictions c1:", predictions_c1)
@@ -292,11 +306,15 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		# print("predictions c2:", predictions_c2)
 		
 		(topk_c1_positive, topk_c1_negative) = top_k(predictions_c1,k)
-		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,k)
+		
 
-		topk_c1_dataset = create_dataset(topk_c1_positive, topk_c1_negative, 
+		(topk_c1_dataset, unsupervised_dataset) = create_dataset(topk_c1_positive, topk_c1_negative, 
 			predictions_c1, unsupervised_dataset)
-		topk_c2_dataset = create_dataset(topk_c2_positive, topk_c2_negative, 
+		if(len(unsupervised_dataset)*batch_size<k):
+			break
+		predictions_c2 = c2.predict(unsupervised_dataset, batch_size=batch_size)
+		(topk_c2_positive, topk_c2_negative) = top_k(predictions_c2,k)
+		(topk_c2_dataset, unsupervised_dataset) = create_dataset(topk_c2_positive, topk_c2_negative, 
 			predictions_c2, unsupervised_dataset)
 		topk_dataset = append_dataset(topk_c1_dataset, topk_c2_dataset)
 		print(train_dataset)
