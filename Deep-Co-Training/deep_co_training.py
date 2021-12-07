@@ -195,10 +195,10 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		# Iterate over the batches of the dataset.
 		for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
 			print(step, end=' ')
-			# loss_value_c1 = train_step_c1(x_batch_train, y_batch_train, c1)
-			# loss_value_c2 = train_step_c2(x_batch_train, y_batch_train, c2)
+			loss_value_c1 = train_step_c1(x_batch_train, y_batch_train, c1)
+			loss_value_c2 = train_step_c2(x_batch_train, y_batch_train, c2)
 
-			loss_value_c1, loss_value_c2 = ultimate_train_step(x_batch_train, y_batch_train, c1, c2)
+			# loss_value_c1, loss_value_c2 = ultimate_train_step(x_batch_train, y_batch_train, c1, c2)
 
 
 		# Use tf.summary.scalar() to log metrics with the scope of the summary writers
@@ -304,8 +304,8 @@ def custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset):
 		train_dataset = append_dataset(train_dataset.unbatch(), topk_dataset.unbatch())
 		print(train_dataset)
 	
-	metrics_clf1.to_csv("logs/clf1_"+k+".csv")
-	metrics_clf2.to_csv("logs/clf2_"+k+".csv")
+	metrics_clf1.to_csv("logs/clf1_"+str(k)+".csv")
+	metrics_clf2.to_csv("logs/clf2_"+str(k)+".csv")
 
 
 def deep_co_training():
