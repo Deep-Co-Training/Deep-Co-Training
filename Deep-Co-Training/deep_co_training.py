@@ -30,10 +30,10 @@ from models.bert import Bert
 
 
 
-EPOCHS=25
+EPOCHS=15
 batch_size = 32
 buffer_size = 32
-k = 16
+k = 64
 
 # Instantiate an optimizer to train the model.
 optimizer_c1 = keras.optimizers.Adam()

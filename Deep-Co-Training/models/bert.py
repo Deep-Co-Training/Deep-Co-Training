@@ -144,7 +144,7 @@ map_model_to_preprocess = {
 
 bert_model_name_clf1 = 'bert_en_uncased_L-12_H-768_A-12'
 
-bert_model_name_clf2 =  'bert_en_uncased_L-12_H-768_A-12'
+bert_model_name_clf2 =  'small_bert/bert_en_uncased_L-4_H-768_A-12'
 
 tfhub_handle_encoder_clf1 = map_name_to_handle[bert_model_name_clf1]
 tfhub_handle_preprocess_clf1 = map_model_to_preprocess[bert_model_name_clf1]
