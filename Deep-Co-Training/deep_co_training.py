@@ -3,6 +3,7 @@ import importlib
 import sys
 import time
 import datetime
+from xml.etree.ElementInclude import include
 
 import tensorflow as tf
 
@@ -357,6 +358,13 @@ def deep_co_training():
 
 	## Training
 	custom_train(EPOCHS,c1,c2,train_dataset,test_dataset,unsupervised_dataset)
+
+	saved_model_path_clf1 = './sav/clf1'
+	saved_model_path_clf2 = './sav/clf2'
+
+
+	c1.save(saved_model_path_clf1, include_optimizer=False)
+	c2.save(saved_model_path_clf2, include_optimizer=False)
 
 	
 
